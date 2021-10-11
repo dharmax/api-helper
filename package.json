@@ -1,0 +1,28 @@
+{
+  "name": "@dharmax/api-helper",
+  "version": "1.0.1",
+  "description": "Simple REST API convinience library, including spinner and url-builder",
+  "main": "dist/pubsub.js",
+  "types": "dist/pubsub.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dharmax/api-helper.git"
+  },
+  "keywords": [
+    "pubsub","pub-sub","dispatcher","events"
+  ],
+  "author": "Avi Tshuva, dharmax",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dharmax/api-helper/issues"
+  },
+  "homepage": "https://github.com/dharmax/api-helper",
+  "devDependencies": {
+    "typescript": "^4.0.5"
+  }
+}
