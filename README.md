@@ -19,7 +19,7 @@ Also, you can set the errorHandler to point to your application error handler, f
 
 # example      
 ```typescript
-export userStore = new class extends StoreApi {
+export const userStore = new class extends StoreApi {
 
     constructor() {
         super('users')

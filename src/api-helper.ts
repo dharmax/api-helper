@@ -75,6 +75,12 @@ const Spinner = new class {
     }
 }
 
+/**
+ * A generic REST call
+ * @param url target
+ * @param method method
+ * @param conf_ extra configuration for the fetch call
+ */
 export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
     const conf: RequestInit = {
         ...conf_,
@@ -93,7 +99,7 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
             throw `${response.error}: ${response.message} (${response.statusCode})`
         }
         return response
-    } catch (e) {
+    } catch (e:any) {
         const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e))
         errorReporter(message)
         throw e
@@ -102,6 +108,9 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
     }
 }
 
+/**
+ * The generic Store abstraction. Derive your own store singleton per your REST resources from here.
+ */
 export class StoreApi {
 
     constructor(protected baseResourceUrl: string) {

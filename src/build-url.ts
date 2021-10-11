@@ -5,18 +5,24 @@ export type URLOptions = {
 
 }
 
-export function buildUrl(url: string, options: URLOptions) {
+/**
+ * Simply builds a URL.
+ * @see URLOptions
+ * @param baseUrl
+ * @param options
+ */
+export function buildUrl(baseUrl: string, options: URLOptions) {
     let queryString: string[] = [];
     let key;
     let builtUrl;
 
-    if (url === null) {
+    if (baseUrl === null) {
         builtUrl = '';
-    } else if (typeof (url) === 'object') {
+    } else if (typeof (baseUrl) === 'object') {
         builtUrl = '';
-        options = url;
+        options = baseUrl;
     } else {
-        builtUrl = url;
+        builtUrl = baseUrl;
     }
 
     if (options) {
