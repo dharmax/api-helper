@@ -1,6 +1,10 @@
 import {buildUrl} from './build-url'
 
-export let baseUrl = window.location.origin
+export let defaultBaseUrl = window.location.origin
+
+export function setDefaultBaseUrl(url: string) {
+    defaultBaseUrl = url
+}
 
 export interface IReadOptionsFront {
     from: number
@@ -23,6 +27,10 @@ export interface IReadResult {
 
 export let errorReporter = (message: string) => {
     console.error(message)
+}
+
+export function setErrorReporter(reporter: (s: string) => any) {
+    errorReporter = reporter
 }
 
 export async function post(url: string, data: object, conf_: any = {}) {
@@ -93,13 +101,13 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
     }
     try {
         Spinner.show()
-        const response = await fetch(baseUrl + '/api/' + url, conf).then(r => r.json())
+        const response = await fetch(url, conf).then(r => r.json())
         if (response.error) {
             // noinspection ExceptionCaughtLocallyJS
             throw `${response.error}: ${response.message} (${response.statusCode})`
         }
         return response
-    } catch (e:any) {
+    } catch (e: any) {
         const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e))
         errorReporter(message)
         throw e
@@ -112,14 +120,17 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
  * The generic Store abstraction. Derive your own store singleton per your REST resources from here.
  */
 export class StoreApi {
+    protected readonly resourceUrl: string;
 
-    constructor(protected baseResourceUrl: string) {
+    constructor(protected resourceNameOrFullUrl: string, useDefaultBase = true) {
+        this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl
     }
+
 
     load(opt_: IReadOptionsFront, ...pathParams: string[]): Promise<IReadResult> {
         const opt = {...opt_}
         opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams))
-        return callApi(buildUrl(this.baseResourceUrl, {
+        return callApi(buildUrl(this.resourceUrl, {
             queryParams: opt,
             path: pathParams
         }))
@@ -127,33 +138,33 @@ export class StoreApi {
 
     remove(itemId: string | number, ...pathParams: string[]) {
         pathParams = pathParams || []
-        return remove([this.baseResourceUrl, ...pathParams, itemId].join('/'))
+        return remove([this.resourceUrl, ...pathParams, itemId].join('/'))
     }
 
     create(entity: Object, ...pathParams: string[]) {
-        return post(this.baseResourceUrl + ['', ...pathParams].join('/'), entity)
+        return post(this.resourceUrl + ['', ...pathParams].join('/'), entity)
     }
 
     operation(operationName: string, data?: any, ...pathParams: string[]) {
-        return post(this.baseResourceUrl + ['', operationName, ...pathParams].join('/'), data)
+        return post(this.resourceUrl + ['', operationName, ...pathParams].join('/'), data)
     }
 
     getEntity(id: string, opts?: Object, ...pathParams: string[]) {
-        return callApi(buildUrl(`${this.baseResourceUrl}${id ? '/' + id : ''}`, {
+        return callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams,
             queryParams: opts
         }))
     }
 
     get(pathParams: string | string[], queryParams?: Object) {
-        return callApi(buildUrl(this.baseResourceUrl, {
+        return callApi(buildUrl(this.resourceUrl, {
             path: Array.isArray(pathParams) ? pathParams : [pathParams],
             queryParams: queryParams
         }))
     }
 
     update(id: string, fields: Object, ...pathParams: string[]) {
-        return put(buildUrl(`${this.baseResourceUrl}${id ? '/' + id : ''}`, {
+        return put(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams
         }), fields)
     }
