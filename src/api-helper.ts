@@ -2,53 +2,6 @@ import {buildUrl} from './build-url'
 
 export let defaultBaseUrl = window.location.origin
 
-export function setDefaultBaseUrl(url: string) {
-    defaultBaseUrl = url
-}
-
-export interface IReadOptionsFront {
-    from: number
-    count: number
-    entityOnly?: boolean
-    queryName?: string
-    queryParams?: Object
-    sort?: string
-    projection?: string[]
-    requestNumber?: number // created automatically
-}
-
-export interface IReadResult {
-    error?: string
-    items: any[]
-    total?: number
-    totalFiltered: number
-    opts?: IReadOptionsFront
-}
-
-export let errorReporter = (message: string) => {
-    console.error(message)
-}
-
-export function setErrorReporter(reporter: (s: string) => any) {
-    errorReporter = reporter
-}
-
-export async function post(url: string, data: object, conf_: any = {}) {
-    return callApi(url, 'post', Object.assign(conf_, {
-        body: JSON.stringify(data)
-    }))
-}
-
-export async function remove(url: string, conf_: any = {}) {
-    return callApi(url, 'delete')
-}
-
-
-export async function put(url: string, data: object, conf_: any = {}) {
-    return callApi(url, 'put', Object.assign(conf_, {
-        body: JSON.stringify(data)
-    }))
-}
 
 const Spinner = new class {
     private counter = 0
@@ -83,21 +36,87 @@ const Spinner = new class {
     }
 }
 
+
+export function setDefaultBaseUrl(url: string) {
+    defaultBaseUrl = url
+}
+
+export interface IReadOptionsFront {
+    from: number
+    count: number
+    entityOnly?: boolean
+    queryName?: string
+    queryParams?: Object
+    sort?: string
+    projection?: string[]
+    requestNumber?: number // created automatically
+}
+
+export interface IReadResult {
+    error?: string
+    items: any[]
+    total?: number
+    totalFiltered: number
+    opts?: IReadOptionsFront
+}
+
+export let errorReporter = (message: string) => {
+    console.error(message)
+}
+
+export function setErrorReporter(reporter: (s: string) => any) {
+    errorReporter = reporter
+}
+
+export async function post(url: string, data: object | string, conf_: any = {}) {
+
+    const isRaw = fixContentType(data, conf_);
+    return callApi(url, 'post', {
+        ...conf_,
+        body: isRaw ? data : JSON.stringify(data)
+    })
+}
+
+export async function remove(url: string, conf_: any = {}) {
+    return callApi(url, 'delete', conf_)
+}
+
+
+function fixContentType(data: object | string, conf_: any): boolean {
+    const isRaw = typeof (data) === 'string'
+    if (isRaw) {
+        let headers: Headers = conf_.headers || new Headers()
+        headers.set('Content-Type', 'html/text')
+        conf_.headers = headers
+    }
+    return isRaw
+}
+
+export async function put(url: string, data: object | string, conf_: any = {}) {
+    const isRaw = typeof (data) === 'string'
+    return callApi(url, 'put', {
+        ...conf_,
+        body: isRaw ? data : JSON.stringify(data)
+    })
+}
+
+
 /**
  * A generic REST call
  * @param url target
  * @param method method
  * @param conf_ extra configuration for the fetch call
+ * @param headers optional explicit headers
  */
 export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
     const conf: RequestInit = {
-        ...conf_,
         method,
         mode: 'cors',
         headers: new Headers({
             'session-token': localStorage.sessionToken,
             'Content-Type': 'application/json'
-        })
+        }),
+        ...conf_
     }
     try {
         Spinner.show()
@@ -122,15 +141,27 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
 export class StoreApi {
     protected readonly resourceUrl: string;
 
+    /**
+     * Can be overridden to create JWT or whatever
+     */
+    headerGenerator = () => {
+        return null
+    }
+
     constructor(protected resourceNameOrFullUrl: string, useDefaultBase = true) {
         this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl
     }
 
+    callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
+        const headers = this.headerGenerator()
+        conf_.headers = conf_.headers || this.headerGenerator()
+        return callApi(url, method, conf_)
+    }
 
     load(opt_: IReadOptionsFront, ...pathParams: string[]): Promise<IReadResult> {
         const opt = {...opt_}
         opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams))
-        return callApi(buildUrl(this.resourceUrl, {
+        return this.callApi(buildUrl(this.resourceUrl, {
             queryParams: opt,
             path: pathParams
         }))
@@ -150,20 +181,20 @@ export class StoreApi {
     }
 
     getEntity(id: string, opts?: Object, ...pathParams: string[]) {
-        return callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
+        return this.callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams,
             queryParams: opts
         }))
     }
 
     get(pathParams: string | string[], queryParams?: Object) {
-        return callApi(buildUrl(this.resourceUrl, {
+        return this.callApi(buildUrl(this.resourceUrl, {
             path: Array.isArray(pathParams) ? pathParams : [pathParams],
             queryParams: queryParams
         }))
     }
 
-    update(id: string, fields: Object, ...pathParams: string[]) {
+    update(id: string, fields: Object | string, ...pathParams: string[]) {
         return put(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams
         }), fields)
