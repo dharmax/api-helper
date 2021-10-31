@@ -106,7 +106,6 @@ export async function put(url: string, data: object | string, conf_: any = {}) {
  * @param url target
  * @param method method
  * @param conf_ extra configuration for the fetch call
- * @param headers optional explicit headers
  */
 export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
     const conf: RequestInit = {
