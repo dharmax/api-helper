@@ -22,7 +22,6 @@ const Spinner = new class {
         if (s)
             s.style.visibility = 'visible';
     }
-
     hide() {
         if (--this.counter > 0)
             return;
@@ -31,19 +30,15 @@ const Spinner = new class {
             s.style.visibility = 'hidden';
     }
 };
-
 export function setDefaultBaseUrl(url) {
     defaultBaseUrl = url;
 }
-
 export let errorReporter = (message) => {
     console.error(message);
 };
-
 export function setErrorReporter(reporter) {
     errorReporter = reporter;
 }
-
 export async function post(url, data, conf_ = {}) {
     const isRaw = fixContentType(data, conf_);
     return callApi(url, 'post', {
@@ -51,11 +46,9 @@ export async function post(url, data, conf_ = {}) {
         body: isRaw ? data : JSON.stringify(data)
     });
 }
-
 export async function remove(url, conf_ = {}) {
     return callApi(url, 'delete', conf_);
 }
-
 function fixContentType(data, conf_) {
     const isRaw = typeof (data) === 'string';
     if (isRaw) {
@@ -65,7 +58,6 @@ function fixContentType(data, conf_) {
     }
     return isRaw;
 }
-
 export async function put(url, data, conf_ = {}) {
     const isRaw = typeof (data) === 'string';
     return callApi(url, 'put', {
@@ -73,7 +65,6 @@ export async function put(url, data, conf_ = {}) {
         body: isRaw ? data : JSON.stringify(data)
     });
 }
-
 /**
  * A generic REST call
  * @param url target
@@ -81,6 +72,8 @@ export async function put(url, data, conf_ = {}) {
  * @param conf_ extra configuration for the fetch call
  */
 export async function callApi(url, method = 'get', conf_ = {}) {
+    if (!conf_.headers)
+        delete conf_.headers;
     const conf = {
         method,
         mode: 'cors',
@@ -122,13 +115,11 @@ export class StoreApi {
         };
         this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl;
     }
-
     callApi(url, method = 'get', conf_ = {}) {
         const headers = this.headerGenerator();
         conf_.headers = conf_.headers || this.headerGenerator();
         return callApi(url, method, conf_);
     }
-
     load(opt_, ...pathParams) {
         const opt = {...opt_};
         opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams));
@@ -137,7 +128,6 @@ export class StoreApi {
             path: pathParams
         }));
     }
-
     remove(itemId, ...pathParams) {
         pathParams = pathParams || [];
         return remove([this.resourceUrl, ...pathParams, itemId].join('/'));
