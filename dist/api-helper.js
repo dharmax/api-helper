@@ -1,27 +1,6 @@
-import { buildUrl } from './build-url';
+import {buildUrl} from './build-url';
+
 export let defaultBaseUrl = window.location.origin;
-export function setDefaultBaseUrl(url) {
-    defaultBaseUrl = url;
-}
-export let errorReporter = (message) => {
-    console.error(message);
-};
-export function setErrorReporter(reporter) {
-    errorReporter = reporter;
-}
-export async function post(url, data, conf_ = {}) {
-    return callApi(url, 'post', Object.assign(conf_, {
-        body: JSON.stringify(data)
-    }));
-}
-export async function remove(url, conf_ = {}) {
-    return callApi(url, 'delete');
-}
-export async function put(url, data, conf_ = {}) {
-    return callApi(url, 'put', Object.assign(conf_, {
-        body: JSON.stringify(data)
-    }));
-}
 const Spinner = new class {
     constructor(spinnerElement = undefined) {
         this.spinnerElement = spinnerElement;
@@ -43,6 +22,7 @@ const Spinner = new class {
         if (s)
             s.style.visibility = 'visible';
     }
+
     hide() {
         if (--this.counter > 0)
             return;
@@ -51,6 +31,49 @@ const Spinner = new class {
             s.style.visibility = 'hidden';
     }
 };
+
+export function setDefaultBaseUrl(url) {
+    defaultBaseUrl = url;
+}
+
+export let errorReporter = (message) => {
+    console.error(message);
+};
+
+export function setErrorReporter(reporter) {
+    errorReporter = reporter;
+}
+
+export async function post(url, data, conf_ = {}) {
+    const isRaw = fixContentType(data, conf_);
+    return callApi(url, 'post', {
+        ...conf_,
+        body: isRaw ? data : JSON.stringify(data)
+    });
+}
+
+export async function remove(url, conf_ = {}) {
+    return callApi(url, 'delete', conf_);
+}
+
+function fixContentType(data, conf_) {
+    const isRaw = typeof (data) === 'string';
+    if (isRaw) {
+        let headers = conf_.headers || new Headers();
+        headers.set('Content-Type', 'html/text');
+        conf_.headers = headers;
+    }
+    return isRaw;
+}
+
+export async function put(url, data, conf_ = {}) {
+    const isRaw = typeof (data) === 'string';
+    return callApi(url, 'put', {
+        ...conf_,
+        body: isRaw ? data : JSON.stringify(data)
+    });
+}
+
 /**
  * A generic REST call
  * @param url target
@@ -59,13 +82,13 @@ const Spinner = new class {
  */
 export async function callApi(url, method = 'get', conf_ = {}) {
     const conf = {
-        ...conf_,
         method,
         mode: 'cors',
         headers: new Headers({
             'session-token': localStorage.sessionToken,
             'Content-Type': 'application/json'
-        })
+        }),
+        ...conf_
     };
     try {
         Spinner.show();
@@ -91,16 +114,30 @@ export async function callApi(url, method = 'get', conf_ = {}) {
 export class StoreApi {
     constructor(resourceNameOrFullUrl, useDefaultBase = true) {
         this.resourceNameOrFullUrl = resourceNameOrFullUrl;
+        /**
+         * Can be overridden to create JWT or whatever
+         */
+        this.headerGenerator = () => {
+            return null;
+        };
         this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl;
     }
+
+    callApi(url, method = 'get', conf_ = {}) {
+        const headers = this.headerGenerator();
+        conf_.headers = conf_.headers || this.headerGenerator();
+        return callApi(url, method, conf_);
+    }
+
     load(opt_, ...pathParams) {
-        const opt = { ...opt_ };
+        const opt = {...opt_};
         opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams));
-        return callApi(buildUrl(this.resourceUrl, {
+        return this.callApi(buildUrl(this.resourceUrl, {
             queryParams: opt,
             path: pathParams
         }));
     }
+
     remove(itemId, ...pathParams) {
         pathParams = pathParams || [];
         return remove([this.resourceUrl, ...pathParams, itemId].join('/'));
@@ -112,13 +149,13 @@ export class StoreApi {
         return post(this.resourceUrl + ['', operationName, ...pathParams].join('/'), data);
     }
     getEntity(id, opts, ...pathParams) {
-        return callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
+        return this.callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams,
             queryParams: opts
         }));
     }
     get(pathParams, queryParams) {
-        return callApi(buildUrl(this.resourceUrl, {
+        return this.callApi(buildUrl(this.resourceUrl, {
             path: Array.isArray(pathParams) ? pathParams : [pathParams],
             queryParams: queryParams
         }));

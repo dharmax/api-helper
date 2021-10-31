@@ -108,6 +108,8 @@ export async function put(url: string, data: object | string, conf_: any = {}) {
  * @param conf_ extra configuration for the fetch call
  */
 export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
+    if (!conf_.headers)
+        delete conf_.headers
     const conf: RequestInit = {
         method,
         mode: 'cors',
