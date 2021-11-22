@@ -59,7 +59,7 @@ function fixContentType(data, conf_) {
     return isRaw;
 }
 export async function put(url, data, conf_ = {}) {
-    const isRaw = typeof (data) === 'string';
+    const isRaw = fixContentType(data, conf_);
     return callApi(url, 'put', {
         ...conf_,
         body: isRaw ? data : JSON.stringify(data)
