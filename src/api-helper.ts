@@ -2,7 +2,9 @@ import {buildUrl} from './build-url'
 
 export let defaultBaseUrl = window.location.origin
 
-
+/**
+ * You can define the spinner's appearance in the CSS class "spinner". No need to do anything more.
+ */
 const Spinner = new class {
     private counter = 0
 
@@ -11,7 +13,8 @@ const Spinner = new class {
             return
         this.spinnerElement = document.body.getElementsByClassName('spinner')[0] as HTMLElement
         if (!this.spinnerElement) {
-            this.spinnerElement = document.createElement('div')
+            this.spinnerElement = document.createElement('div') as HTMLElement
+            this.spinnerElement.className = 'spinner'
             document.body.appendChild(this.spinnerElement)
         }
     }
@@ -49,7 +52,8 @@ export interface IReadOptionsFront {
     queryParams?: Object
     sort?: string
     projection?: string[]
-    requestNumber?: number // created automatically
+
+    [x: string]: any
 }
 
 export interface IReadResult {
@@ -57,7 +61,7 @@ export interface IReadResult {
     items: any[]
     total?: number
     totalFiltered: number
-    opts?: IReadOptionsFront
+    opts?: any
 }
 
 export let errorReporter = (message: string) => {
@@ -68,36 +72,28 @@ export function setErrorReporter(reporter: (s: string) => any) {
     errorReporter = reporter
 }
 
-export async function post(url: string, data: object | string, conf_: any = {}) {
-
-    const isRaw = fixContentType(data, conf_);
-    return callApi(url, 'post', {
-        ...conf_,
-        body: isRaw ? data : JSON.stringify(data)
-    })
+export async function post(url: string, data: object | string, conf: RequestInit = {}) {
+    return callApi(url, 'post', conf, data)
 }
 
-export async function remove(url: string, conf_: any = {}) {
-    return callApi(url, 'delete', conf_)
+export async function remove(url: string, conf: RequestInit = {}) {
+    return callApi(url, 'delete', conf)
 }
 
 
-function fixContentType(data: object | string, conf_: any): boolean {
-    const isRaw = typeof (data) === 'string'
-    if (isRaw) {
-        let headers: Headers = conf_.headers || new Headers()
+function setPayload(data: object | string, conf: RequestInit): void {
+
+    if (typeof (data) === 'string') {
+        let headers = conf.headers as Headers || new Headers()
         headers.set('Content-Type', 'html/text')
-        conf_.headers = headers
-    }
-    return isRaw
+        conf.headers = headers
+        conf.body = data
+    } else
+        conf.body = JSON.stringify(data)
 }
 
-export async function put(url: string, data: object | string, conf_: any = {}) {
-    const isRaw = fixContentType(data, conf_);
-    return callApi(url, 'put', {
-        ...conf_,
-        body: isRaw ? data : JSON.stringify(data)
-    })
+export async function put(url: string, data: object | string, conf: any = {}) {
+    return callApi(url, 'put', conf, data)
 }
 
 
@@ -107,19 +103,17 @@ export async function put(url: string, data: object | string, conf_: any = {}) {
  * @param method method
  * @param conf_ extra configuration for the fetch call
  */
-export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
+export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: RequestInit = {}, payload?: string | Object) {
     if (!conf_.headers)
         delete conf_.headers
-    url = url.replace('//', '/')
     const conf: RequestInit = {
         method,
         mode: 'cors',
-        headers: new Headers({
-            'session-token': localStorage.sessionToken,
-            'Content-Type': 'application/json'
-        }),
         ...conf_
     }
+    if (payload)
+        setPayload(payload, conf)
+
     try {
         Spinner.show()
         const response = await fetch(url, conf).then(r => r.json())
@@ -137,68 +131,112 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
     }
 }
 
+interface CallApiParameters {
+    method: 'post' | 'get' | 'delete' | 'put'
+    pathParams?: string[]
+    queryParams?: { [x: string]: string } | undefined
+    payload?: string | Object
+    conf?: RequestInit
+}
+
 /**
  * The generic Store abstraction. Derive your own store singleton per your REST resources from here.
+ * It is meant to provide a clear, verb-based representation of resource. As it is, it provides the standard REST verbs,
+ * out of the box, including the option to set different that the default base url, and custom headers, event without
+ * overriding and method, but you should add your own methods that represents your specific semantics and data modeling
+ * (in case it is different that the server's modeling) as well as caching and event broadcasting when relevant to you.
  */
 export class StoreApi {
     protected readonly resourceUrl: string;
 
     /**
-     * Can be overridden to create JWT or whatever
+     *
+     * @param resourceNameOrFullUrl
+     * @param useDefaultBaseOrServiceRoot
      */
-    headerGenerator = () => {
+    constructor(protected resourceNameOrFullUrl: string, useDefaultBaseOrServiceRoot: boolean | string = true) {
+        if (typeof useDefaultBaseOrServiceRoot === 'string')
+            this.resourceUrl = useDefaultBaseOrServiceRoot + '/' + resourceNameOrFullUrl
+        else
+            this.resourceUrl = useDefaultBaseOrServiceRoot ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl
+
+    }
+
+    headerGenerator() {
         return null
     }
 
-    constructor(protected resourceNameOrFullUrl: string, useDefaultBase = true) {
-        this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl
-    }
-
-    callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: any = {}) {
+    callApi({method = 'get', pathParams, queryParams, payload}: CallApiParameters) {
         const headers = this.headerGenerator()
-        conf_.headers = conf_.headers || this.headerGenerator()
-        return callApi(url, method, conf_)
-    }
-
-    load(opt_: IReadOptionsFront, ...pathParams: string[]): Promise<IReadResult> {
-        const opt = {...opt_}
-        opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams))
-        return this.callApi(buildUrl(this.resourceUrl, {
-            queryParams: opt,
-            path: pathParams
-        }))
+        const conf: RequestInit = headers ? {headers} : {}
+        const url = buildUrl(this.resourceUrl, {path: pathParams, queryParams: queryParams})
+        return callApi(url, method, conf, payload)
     }
 
     remove(itemId: string | number, ...pathParams: string[]) {
-        pathParams = pathParams || []
-        return remove([this.resourceUrl, ...pathParams, itemId].join('/'))
+        return this.callApi({
+            method: 'delete',
+            pathParams: [...pathParams, itemId.toString()]
+        })
     }
 
+    /**
+     * A formalization of "create an entity".
+     * @param entity
+     * @param pathParams where you can specify an entity type which is not the basic associated resource entity type
+     */
     create(entity: Object, ...pathParams: string[]) {
-        return post(this.resourceUrl + ['', ...pathParams].join('/'), entity)
+        return this.post(entity, ...pathParams)
+
     }
 
-    operation(operationName: string, data?: any, ...pathParams: string[]) {
-        return post(this.resourceUrl + ['', operationName, ...pathParams].join('/'), data)
+    post(data?: string | Object, ...pathParams: string[]) {
+        return this.callApi({
+            method: "post",
+            pathParams,
+            payload: data
+        })
     }
 
-    getEntity(id: string, opts?: Object, ...pathParams: string[]) {
-        return this.callApi(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
-            path: pathParams,
-            queryParams: opts
-        }))
+    /**
+     * A formalization of an "operation" - it is a post, where the path params state the operation name
+     * @param operationName
+     * @param data
+     * @param pathParams
+     */
+    operation(operationName: string, data?: string | Object, ...pathParams: string[]) {
+        return this.post(data, ...[operationName, ...pathParams])
     }
 
-    get(pathParams: string | string[], queryParams?: Object) {
-        return this.callApi(buildUrl(this.resourceUrl, {
-            path: Array.isArray(pathParams) ? pathParams : [pathParams],
-            queryParams: queryParams
-        }))
+    /**
+     * It is a get with an id - a formalization of "get entity by Id"
+     * @param id
+     * @param conf
+     * @param pathParams
+     */
+    getEntity(id: string, conf ?: RequestInit, ...pathParams: string[]) {
+        return this.get([id, ...pathParams], {})
     }
 
+    get(pathParams: string | string[], queryParams ?: { [x: string]: string }) {
+        return this.callApi({
+            method: "get",
+            queryParams,
+            pathParams: [...pathParams]
+        })
+    }
+
+    /**
+     * A formalized update
+     * @param id
+     * @param fields
+     * @param pathParams
+     */
     update(id: string, fields: Object | string, ...pathParams: string[]) {
-        return put(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
-            path: pathParams
-        }), fields)
+        return this.callApi({
+            method: "put",
+            pathParams,
+            payload: fields
+        })
     }
 }

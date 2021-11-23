@@ -1,6 +1,7 @@
 import {buildUrl} from './build-url';
 
 export let defaultBaseUrl = window.location.origin;
+
 const Spinner = new class {
     constructor(spinnerElement = undefined) {
         this.spinnerElement = spinnerElement;
@@ -30,15 +31,19 @@ const Spinner = new class {
             s.style.visibility = 'hidden';
     }
 };
+
 export function setDefaultBaseUrl(url) {
     defaultBaseUrl = url;
 }
+
 export let errorReporter = (message) => {
     console.error(message);
 };
+
 export function setErrorReporter(reporter) {
     errorReporter = reporter;
 }
+
 export async function post(url, data, conf_ = {}) {
     const isRaw = fixContentType(data, conf_);
     return callApi(url, 'post', {
@@ -46,9 +51,11 @@ export async function post(url, data, conf_ = {}) {
         body: isRaw ? data : JSON.stringify(data)
     });
 }
+
 export async function remove(url, conf_ = {}) {
     return callApi(url, 'delete', conf_);
 }
+
 function fixContentType(data, conf_) {
     const isRaw = typeof (data) === 'string';
     if (isRaw) {
@@ -58,6 +65,7 @@ function fixContentType(data, conf_) {
     }
     return isRaw;
 }
+
 export async function put(url, data, conf_ = {}) {
     const isRaw = fixContentType(data, conf_);
     return callApi(url, 'put', {
@@ -101,25 +109,26 @@ export async function callApi(url, method = 'get', conf_ = {}) {
         Spinner.hide();
     }
 }
+
 /**
  * The generic Store abstraction. Derive your own store singleton per your REST resources from here.
  */
 export class StoreApi {
     constructor(resourceNameOrFullUrl, useDefaultBase = true) {
         this.resourceNameOrFullUrl = resourceNameOrFullUrl;
-        /**
-         * Can be overridden to create JWT or whatever
-         */
-        this.headerGenerator = () => {
-            return null;
-        };
         this.resourceUrl = useDefaultBase ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl;
     }
+
+    headerGenerator() {
+        return null
+    }
+
     callApi(url, method = 'get', conf_ = {}) {
         const headers = this.headerGenerator();
         conf_.headers = conf_.headers || this.headerGenerator();
         return callApi(url, method, conf_);
     }
+
     load(opt_, ...pathParams) {
         const opt = {...opt_};
         opt.queryParams && (opt.queryParams = JSON.stringify(opt.queryParams));
@@ -144,12 +153,34 @@ export class StoreApi {
             queryParams: opts
         }));
     }
+
     get(pathParams, queryParams) {
         return this.callApi(buildUrl(this.resourceUrl, {
             path: Array.isArray(pathParams) ? pathParams : [pathParams],
             queryParams: queryParams
         }));
     }
+
+    post(payload, pathParams, queryParams) {
+
+        const conf = {}
+        const isRaw = fixContentType(payload, conf);
+        return this.callApi(buildUrl(this.resourceUrl, {
+            path: Array.isArray(pathParams) ? pathParams : [pathParams],
+            queryParams: queryParams
+        }), 'post', {
+            ...conf,
+            body: isRaw ? data : JSON.stringify(payload)
+        });
+    }
+
+    put(pathParams, queryParams) {
+        return this.callApi(buildUrl(this.resourceUrl, {
+            path: Array.isArray(pathParams) ? pathParams : [pathParams],
+            queryParams: queryParams
+        }), 'put');
+    }
+
     update(id, fields, ...pathParams) {
         return put(buildUrl(`${this.resourceUrl}${id ? '/' + id : ''}`, {
             path: pathParams

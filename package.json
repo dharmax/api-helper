@@ -1,6 +1,6 @@
 {
   "name": "@dharmax/api-helper",
-  "version": "1.1.4",
+  "version": "2.0.0",
   "description": "Simple REST API convenience library, including spinner and url-builder",
   "main": "dist/api-helper.js",
   "types": "dist/api-helper.d.ts",
@@ -14,10 +14,11 @@
     "url": "git+https://github.com/dharmax/api-helper.git"
   },
   "keywords": [
-    "pubsub",
-    "pub-sub",
-    "dispatcher",
-    "events"
+    "rest",
+    "fetch",
+    "api",
+    "helper",
+    "spinner"
   ],
   "author": "Avi Tshuva, dharmax",
   "license": "ISC",
