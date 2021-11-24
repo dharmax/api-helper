@@ -1,11 +1,13 @@
 import {buildUrl} from './build-url'
+const browser = typeof(window) !== 'undefined'
+export let defaultBaseUrl = browser ? window.location.origin : 'localhost'
+import {fetch } from 'native-fetch'
 
-export let defaultBaseUrl = window.location.origin
 
 /**
  * You can define the spinner's appearance in the CSS class "spinner". No need to do anything more.
  */
-const Spinner = new class {
+const Spinner = browser && new class {
     private counter = 0
 
     constructor(private readonly spinnerElement: HTMLElement | undefined = undefined) {
@@ -115,7 +117,8 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
         setPayload(payload, conf)
 
     try {
-        Spinner.show()
+        Spinner && Spinner.show()
+        //@ts-ignore
         const response = await fetch(url, conf).then(r => r.json())
         if (response.error) {
             // noinspection ExceptionCaughtLocallyJS
@@ -127,7 +130,7 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
         errorReporter(message)
         throw e
     } finally {
-        Spinner.hide()
+        Spinner && Spinner.hide()
     }
 }
 
@@ -239,4 +242,8 @@ export class StoreApi {
             payload: fields
         })
     }
+}
+
+export function hello(): string {
+    return 'hi';
 }
