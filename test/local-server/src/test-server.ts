@@ -5,13 +5,13 @@ import { mainRoutes } from "./routes";
 const init = async () => {
 
     const server = Hapi.server({
-        port: 3000,
+        port: 3001,
         host: 'localhost'
     });
     server.route(mainRoutes);
 
     await server.start();
-    console.log('Server running on %s', server.info.uri);
+    console.log('Server ff running on %s', server.info.uri);
 };
 
 process.on('unhandledRejection', (err) => {

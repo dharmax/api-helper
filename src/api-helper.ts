@@ -125,6 +125,7 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
             throw `${response.error}: ${response.message} (${response.statusCode})`
         }
         return response
+        // @ts-ignore
     } catch (e: any) {
         const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e))
         errorReporter(message)
@@ -242,8 +243,4 @@ export class StoreApi {
             payload: fields
         })
     }
-}
-
-export function hello(): string {
-    return 'hi';
 }

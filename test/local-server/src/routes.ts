@@ -11,14 +11,14 @@ export const mainRoutes: ServerRoute[] = [
     method: 'POST',
     path: '/',
     handler: (request: any, h: any) => {
-      return  !!request.payload.data
+      return  !!request.payload
     }
   },
   {
     method: 'PUT',
     path: '/',
     handler: (request: any, h: any) => {
-      return  !!request.payload.data
+      return  !!request.payload
     }
   }
 ]

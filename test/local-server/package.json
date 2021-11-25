@@ -4,7 +4,8 @@
   "description": "local server via mocha test",
   "main": ".src/test-server.ts",
   "scripts": {
-    "start": "ts-node ./src/index.ts",
+    "start": "ts-node ./src/test-server.ts",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
