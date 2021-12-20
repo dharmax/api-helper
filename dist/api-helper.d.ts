@@ -89,5 +89,4 @@ export declare class StoreApi {
      */
     update(id: string, fields: Object | string, ...pathParams: string[]): Promise<any>;
 }
-export declare function hello(): string;
 export {};

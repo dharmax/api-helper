@@ -1,6 +1,10 @@
-import { buildUrl } from './build-url';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.StoreApi = exports.callApi = exports.put = exports.remove = exports.post = exports.setErrorReporter = exports.errorReporter = exports.setDefaultBaseUrl = exports.defaultBaseUrl = void 0;
+const build_url_1 = require("./build-url");
 const browser = typeof (window) !== 'undefined';
-export let defaultBaseUrl = browser ? window.location.origin : 'localhost';
+exports.defaultBaseUrl = browser ? window.location.origin : 'localhost';
+const native_fetch_1 = require("native-fetch");
 /**
  * You can define the spinner's appearance in the CSS class "spinner". No need to do anything more.
  */
@@ -34,21 +38,26 @@ const Spinner = browser && new class {
             s.style.visibility = 'hidden';
     }
 };
-export function setDefaultBaseUrl(url) {
-    defaultBaseUrl = url;
+function setDefaultBaseUrl(url) {
+    exports.defaultBaseUrl = url;
 }
-export let errorReporter = (message) => {
+exports.setDefaultBaseUrl = setDefaultBaseUrl;
+let errorReporter = (message) => {
     console.error(message);
 };
-export function setErrorReporter(reporter) {
-    errorReporter = reporter;
+exports.errorReporter = errorReporter;
+function setErrorReporter(reporter) {
+    exports.errorReporter = reporter;
 }
-export async function post(url, data, conf = {}) {
+exports.setErrorReporter = setErrorReporter;
+async function post(url, data, conf = {}) {
     return callApi(url, 'post', conf, data);
 }
-export async function remove(url, conf = {}) {
+exports.post = post;
+async function remove(url, conf = {}) {
     return callApi(url, 'delete', conf);
 }
+exports.remove = remove;
 function setPayload(data, conf) {
     if (typeof (data) === 'string') {
         let headers = conf.headers || new Headers();
@@ -59,16 +68,17 @@ function setPayload(data, conf) {
     else
         conf.body = JSON.stringify(data);
 }
-export async function put(url, data, conf = {}) {
+async function put(url, data, conf = {}) {
     return callApi(url, 'put', conf, data);
 }
+exports.put = put;
 /**
  * A generic REST call
  * @param url target
  * @param method method
  * @param conf_ extra configuration for the fetch call
  */
-export async function callApi(url, method = 'get', conf_ = {}, payload) {
+async function callApi(url, method = 'get', conf_ = {}, payload) {
     if (!conf_.headers)
         delete conf_.headers;
     const conf = {
@@ -80,22 +90,25 @@ export async function callApi(url, method = 'get', conf_ = {}, payload) {
         setPayload(payload, conf);
     try {
         Spinner && Spinner.show();
-        const response = await fetch(url, conf).then(r => r.json());
+        //@ts-ignore
+        const response = await (0, native_fetch_1.fetch)(url, conf).then(r => r.json());
         if (response.error) {
             // noinspection ExceptionCaughtLocallyJS
             throw `${response.error}: ${response.message} (${response.statusCode})`;
         }
         return response;
+        // @ts-ignore
     }
     catch (e) {
         const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e));
-        errorReporter(message);
+        (0, exports.errorReporter)(message);
         throw e;
     }
     finally {
         Spinner && Spinner.hide();
     }
 }
+exports.callApi = callApi;
 /**
  * The generic Store abstraction. Derive your own store singleton per your REST resources from here.
  * It is meant to provide a clear, verb-based representation of resource. As it is, it provides the standard REST verbs,
@@ -103,7 +116,7 @@ export async function callApi(url, method = 'get', conf_ = {}, payload) {
  * overriding and method, but you should add your own methods that represents your specific semantics and data modeling
  * (in case it is different that the server's modeling) as well as caching and event broadcasting when relevant to you.
  */
-export class StoreApi {
+class StoreApi {
     /**
      *
      * @param resourceNameOrFullUrl
@@ -114,7 +127,7 @@ export class StoreApi {
         if (typeof useDefaultBaseOrServiceRoot === 'string')
             this.resourceUrl = useDefaultBaseOrServiceRoot + '/' + resourceNameOrFullUrl;
         else
-            this.resourceUrl = useDefaultBaseOrServiceRoot ? defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl;
+            this.resourceUrl = useDefaultBaseOrServiceRoot ? exports.defaultBaseUrl + '/' + this.resourceNameOrFullUrl : resourceNameOrFullUrl;
     }
     headerGenerator() {
         return null;
@@ -122,7 +135,7 @@ export class StoreApi {
     callApi({ method = 'get', pathParams, queryParams, payload }) {
         const headers = this.headerGenerator();
         const conf = headers ? { headers } : {};
-        const url = buildUrl(this.resourceUrl, { path: pathParams, queryParams: queryParams });
+        const url = (0, build_url_1.buildUrl)(this.resourceUrl, { path: pathParams, queryParams: queryParams });
         return callApi(url, method, conf, payload);
     }
     remove(itemId, ...pathParams) {
@@ -185,6 +198,4 @@ export class StoreApi {
         });
     }
 }
-export function hello() {
-    return 'hi';
-}
+exports.StoreApi = StoreApi;
