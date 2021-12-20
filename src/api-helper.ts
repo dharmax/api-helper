@@ -218,11 +218,11 @@ export class StoreApi {
         return this.get([id, ...pathParams], {})
     }
 
-    get(pathParams: string | string[], queryParams ?: { [x: string]: string }) {
+    get(pathParams?: string | string[], queryParams ?: { [x: string]: string }) {
         return this.callApi({
             method: "get",
             queryParams,
-            pathParams: [...pathParams]
+            pathParams: pathParams ? [...pathParams] : []
         })
     }
 
