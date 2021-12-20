@@ -1,6 +1,6 @@
 {
   "name": "@dharmax/api-helper",
-  "version": "2.0.1",
+  "version": "2.1.1",
   "description": "Simple REST API convenience library, including spinner and url-builder",
   "main": "dist/api-helper.js",
   "types": "dist/api-helper.d.ts",

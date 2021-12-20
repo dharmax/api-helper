@@ -222,7 +222,7 @@ export class StoreApi {
         return this.callApi({
             method: "get",
             queryParams,
-            pathParams: pathParams ? [...pathParams] : []
+            pathParams: !pathParams ? [] : Array.isArray(pathParams) ? [...pathParams] : [pathParams]
         })
     }
 
