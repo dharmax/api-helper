@@ -1,5 +1,5 @@
 export type URLOptions = {
-    hash?: boolean;
+    hash?: boolean
     queryParams?: { [key: string]: any }
     path?: string[]
 
@@ -12,42 +12,38 @@ export type URLOptions = {
  * @param options
  */
 export function buildUrl(baseUrl: string, options: URLOptions) {
-    let queryString: string[] = [];
-    let key;
-    let builtUrl;
+    let queryString: string[] = []
+    let key
+    let builtUrl
 
-    if (baseUrl === null) {
-        builtUrl = '';
-    } else if (typeof (baseUrl) === 'object') {
-        builtUrl = '';
-        options = baseUrl;
-    } else {
-        builtUrl = baseUrl;
-    }
+    if (baseUrl === null)
+        builtUrl = ''
+    else if (typeof (baseUrl) === 'object') {
+        builtUrl = ''
+        options = baseUrl
+    } else
+        builtUrl = baseUrl
+
 
     if (options) {
-        if (options.path && options.path.length) {
-            builtUrl += '/' + options.path.join('/');
-        }
+        if (options.path && options.path.length)
+            builtUrl += '/' + options.path.join('/')
 
         if (options.queryParams) {
             for (key in options.queryParams) {
                 if (options.queryParams.hasOwnProperty(key)) {
-
-                    const value = options.queryParams[key];
+                    const value = options.queryParams[key]
                     if (value === null || value === undefined)
                         continue
-
-                    queryString.push(key + '=' + value);
+                    queryString.push(key + '=' + value)
                 }
             }
-            builtUrl += '?' + queryString.join('&');
+            builtUrl += '?' + queryString.join('&')
         }
 
-        if (options.hash) {
-            builtUrl += '#' + options.hash;
-        }
+        if (options.hash)
+            builtUrl += '#' + options.hash
     }
 
-    return builtUrl;
+    return builtUrl
 }
