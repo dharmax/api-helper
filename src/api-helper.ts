@@ -1,45 +1,9 @@
 import {buildUrl} from './build-url'
-const browser = typeof(window) !== 'undefined'
+import {fetch} from 'native-fetch'
+import {Spinner} from './spinner'
+import {browser} from './browser'
+
 export let defaultBaseUrl = browser ? window.location.origin : 'localhost'
-import {fetch } from 'native-fetch'
-
-
-/**
- * You can define the spinner's appearance in the CSS class "spinner". No need to do anything more.
- */
-const Spinner = browser && new class {
-    private counter = 0
-
-    constructor(private readonly spinnerElement: HTMLElement | undefined = undefined) {
-        if (this.spinnerElement)
-            return
-        this.spinnerElement = document.body.getElementsByClassName('spinner')[0] as HTMLElement
-        if (!this.spinnerElement) {
-            this.spinnerElement = document.createElement('div') as HTMLElement
-            this.spinnerElement.className = 'spinner'
-            document.body.appendChild(this.spinnerElement)
-        }
-    }
-
-    get spinner() {
-        return this.spinnerElement
-    }
-
-    show() {
-        this.counter++
-        const s = this.spinner
-        if (s)
-            s.style.visibility = 'visible'
-    }
-
-    hide() {
-        if (--this.counter > 0)
-            return
-        const s = this.spinner
-        if (s)
-            s.style.visibility = 'hidden'
-    }
-}
 
 
 export function setDefaultBaseUrl(url: string) {
