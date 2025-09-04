@@ -1,6 +1,6 @@
 {
   "name": "@dharmax/api-helper",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Simple REST API convenience library, including spinner and url-builder",
   "main": "dist/api-helper.js",
   "types": "dist/api-helper.d.ts",
@@ -27,15 +27,13 @@
   },
   "homepage": "https://github.com/dharmax/api-helper",
   "dependencies": {
-    "native-fetch":"~4.0.0"
+    "native-fetch": "~4.0.2"
   },
   "devDependencies": {
-    "@types/chai": "^4.2.22",
-    "@types/mocha": "^9.0.0",
-    "chai": "^4.3.4",
+    "chai": "^6.0.1",
     "esm": "^3.2.25",
-    "mocha": "^9.1.3",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.4.3"
+    "mocha": "^11.7.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }

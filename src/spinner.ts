@@ -4,7 +4,8 @@ import {browser} from './browser'
  * This is a simple spinner that you can use to indicate that the application is busy.
  * You can define the spinner's appearance in the CSS class "spinner". No need to do anything more.
  */
-export const Spinner = browser && new class {
+class SpinnerClass {
+
     private counter = 0
 
     constructor(private readonly spinnerElement: HTMLElement | undefined = undefined) {
@@ -37,3 +38,5 @@ export const Spinner = browser && new class {
             s.style.visibility = 'hidden'
     }
 }
+
+export const Spinner = browser ? new SpinnerClass() : undefined
