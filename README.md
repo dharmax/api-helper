@@ -1,7 +1,21 @@
 # API-Helper
 
-## Install
-`npm install @dharmax/api-helper`
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9.2-blue.svg)](https://www.typescriptlang.org/)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
+A TypeScript library for building type-safe REST API clients with automatic request handling and spinner support.
+
+## Installation
+
+```bash
+# Using npm
+npm install @dharmax/api-helper
+
+# Using yarn
+yarn add @dharmax/api-helper
+
+# Using pnpm
+pnpm add @dharmax/api-helper
 
 
 
