@@ -1,9 +1,10 @@
 import {StoreApi} from "../../src/api-helper";
 
+export const testBaseUrl = 'http://localhost:8080'
 
 class TestStore extends StoreApi{
-    constructor(port = 3001) {
-        super('http://localhost:'+port, false)
+    constructor( ) {
+        super(testBaseUrl, false)
     }
 
 }

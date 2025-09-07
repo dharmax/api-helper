@@ -1,4 +1,4 @@
-export declare type URLOptions = {
+export type URLOptions = {
     hash?: boolean;
     queryParams?: {
         [key: string]: any;

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildUrl = void 0;
+exports.buildUrl = buildUrl;
 /**
  * Simply builds a URL.
  * @see URLOptions
@@ -11,20 +11,17 @@ function buildUrl(baseUrl, options) {
     let queryString = [];
     let key;
     let builtUrl;
-    if (baseUrl === null) {
+    if (baseUrl === null)
         builtUrl = '';
-    }
     else if (typeof (baseUrl) === 'object') {
         builtUrl = '';
         options = baseUrl;
     }
-    else {
+    else
         builtUrl = baseUrl;
-    }
     if (options) {
-        if (options.path && options.path.length) {
+        if (options.path && options.path.length)
             builtUrl += '/' + options.path.join('/');
-        }
         if (options.queryParams) {
             for (key in options.queryParams) {
                 if (options.queryParams.hasOwnProperty(key)) {
@@ -36,10 +33,8 @@ function buildUrl(baseUrl, options) {
             }
             builtUrl += '?' + queryString.join('&');
         }
-        if (options.hash) {
+        if (options.hash)
             builtUrl += '#' + options.hash;
-        }
     }
     return builtUrl;
 }
-exports.buildUrl = buildUrl;

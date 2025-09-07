@@ -1,7 +1,9 @@
 import {buildUrl} from './build-url'
-import {fetch} from 'native-fetch'
+import {fetch as nativeFetch} from 'native-fetch'
 import {Spinner} from './spinner'
 import {browser} from './browser'
+
+let fetchImpl = nativeFetch
 
 export let defaultBaseUrl = browser ? window.location.origin : 'localhost'
 
@@ -38,6 +40,10 @@ export function setErrorReporter(reporter: (s: string) => any) {
     errorReporter = reporter
 }
 
+export function setFetchImplementation(fetch: typeof nativeFetch) {
+    fetchImpl = fetch
+}
+
 export async function post(url: string, data: object | string, conf: RequestInit = {}) {
     return callApi(url, 'post', conf, data)
 }
@@ -64,12 +70,34 @@ export async function put(url: string, data: object | string, conf: any = {}) {
 
 
 /**
- * A generic REST call
+ * A generic REST call that can be used to call any REST service.
  * @param url target
  * @param method method
  * @param conf_ extra configuration for the fetch call
+ * @param payload the payload
+ * @returns {Promise<any>}
  */
-export async function callApi(url: string, method: 'post' | 'get' | 'delete' | 'put' = 'get', conf_: RequestInit = {}, payload?: string | Object) {
+export interface RetryConfig {
+    maxRetries?: number;
+    initialRetryDelay?: number;
+    maxRetryDelay?: number;
+    timeout?: number;
+}
+
+const defaultRetryConfig: RetryConfig = {
+    maxRetries: 3,
+    initialRetryDelay: 1000,
+    maxRetryDelay: 5000,
+    timeout: 30000
+};
+
+export async function callApi<T>(
+    url: string,
+    method: 'post' | 'get' | 'delete' | 'put' = 'get',
+    conf_: RequestInit = {},
+    payload?: string | Object,
+    retryConfig: RetryConfig = defaultRetryConfig
+): Promise<T | Response> {
     if (!conf_.headers)
         delete conf_.headers
     const conf: RequestInit = {
@@ -80,22 +108,40 @@ export async function callApi(url: string, method: 'post' | 'get' | 'delete' | '
     if (payload)
         setPayload(payload, conf)
 
-    try {
-        Spinner && Spinner.show()
-        //@ts-ignore
-        const response = await fetch(url, conf).then(r => r.json())
-        if (response.error) {
-            // noinspection ExceptionCaughtLocallyJS
-            throw `${response.error}: ${response.message} (${response.statusCode})`
+    let attempt = 0;
+    while (true) {
+        try {
+            Spinner && Spinner.show();
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), retryConfig.timeout);
+
+            conf.signal = controller.signal;
+            //@ts-ignore
+            const response = await fetchImpl(url, conf)
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                throw `HTTP Error ${response.status}: ${response.statusText}`;
+            }
+            // @ts-ignore
+            return method === 'delete' ? response : await response.json();
+        } catch (e: any) {
+            attempt++;
+            const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e));
+
+            if (attempt >= (retryConfig.maxRetries || defaultRetryConfig.maxRetries!)) {
+                errorReporter(message);
+                throw e;
+            }
+
+            const delay = Math.min(
+                (retryConfig.initialRetryDelay || defaultRetryConfig.initialRetryDelay!) * Math.pow(2, attempt - 1),
+                retryConfig.maxRetryDelay || defaultRetryConfig.maxRetryDelay!
+            );
+            await new Promise(resolve => setTimeout(resolve, delay));
+        } finally {
+            Spinner && Spinner.hide();
         }
-        return response
-        // @ts-ignore
-    } catch (e: any) {
-        const message = e.message || (typeof e == 'string' ? e : JSON.stringify(e))
-        errorReporter(message)
-        throw e
-    } finally {
-        Spinner && Spinner.hide()
     }
 }
 
@@ -105,6 +151,7 @@ interface CallApiParameters {
     queryParams?: { [x: string]: string } | undefined
     payload?: string | Object
     conf?: RequestInit
+    retryConfig?: RetryConfig
 }
 
 /**
@@ -145,13 +192,21 @@ export class StoreApi {
      * @param queryParams the query params
      * @param payload the payload
      * @param conf the configuration for the fetch call (optional)
+     * @param retryConfig
      * @see CallApiParameters, RequestInit
      */
-    callApi<T>({method = 'get', pathParams, queryParams, payload, conf = {}}: CallApiParameters): Promise<T> {
+    callApi<T>({
+                   method = 'get',
+                   pathParams,
+                   queryParams,
+                   payload,
+                   conf = {},
+                   retryConfig = defaultRetryConfig
+               }: CallApiParameters): Promise<T> {
         const headers = this.headerGenerator()
         headers && (conf.headers = Object.fromEntries(Object.entries(headers)))
         const url = buildUrl(this.resourceUrl, {path: pathParams, queryParams: queryParams})
-        return callApi(url, method, conf, payload) as Promise<T>
+        return callApi(url, method, conf, payload, retryConfig) as Promise<T>
     }
 
     /**
@@ -231,7 +286,7 @@ export class StoreApi {
      * @param pathParams where you can specify an entity type which is not the basic associated resource entity type
      * @returns {Promise<T>}
      */
-    update<T>(id: string, fields: Object | string, ...pathParams: string[]):Promise<T> {
+    update<T>(id: string, fields: Object | string, ...pathParams: string[]): Promise<T> {
         return this.callApi({
             method: "put",
             pathParams,
